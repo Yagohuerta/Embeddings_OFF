@@ -79,7 +79,12 @@ def display_video_segment_st(video_gcs_uri: str, segment_id: str, interval: int)
 
 # --- Interfaz de Usuario ---
 
-st.title("🎥 Búsqueda de Videos de Wivboost")
+# --- Logo perfectamente centrado usando columnas de Streamlit ---
+col1, col2, col3 = st.columns([1,2,1])
+with col2:
+    st.image("Front/logo_wivboost.png", width=480)
+
+st.title("🎬 Búsqueda de testigos con Vector Search")
 st.write("""
 Bienvenido a la búsqueda de logos con Vector Search. 
 Puedes buscar solo escribiendo el nombre de la marca, o subiendo una imagen de referencia.
@@ -99,6 +104,7 @@ GCS_VIDEO_URI = "gs://vboxioof/Videos/Videos_Segmentados/"
 SEGMENT_INTERVAL_SEC = 4
 
 if search_button:
+
     if text_query or image_query:
         if image_query is not None:
             st.image(image_query, caption="Imagen de búsqueda", width=250)
@@ -106,6 +112,7 @@ if search_button:
                 f.write(image_query.read())
             image_embedding = get_image_embedding("temp_img_st_query.png")
             search_results = find_nearest_neighbors(image_embedding, 20)
+
         else:
             text_emb = get_text_embedding(text_query)
             search_results = find_nearest_neighbors(text_emb, 20)
@@ -113,17 +120,22 @@ if search_button:
         if not search_results or not search_results[0]:
             st.info("No se encontraron resultados.")
             st.session_state['video_results'] = []
+
         else:
             neighbors_sorted = sorted(search_results[0], key=lambda x: x.distance)
             st.session_state['video_results'] = neighbors_sorted
+
     else:
         st.warning("Por favor, introduce un texto o sube una imagen para buscar.")
         st.session_state['video_results'] = []
 
+
 # Mostrar resultados si existen en session_state
 if 'video_results' in st.session_state and st.session_state['video_results']:
+
     neighbors_sorted = st.session_state['video_results']
     st.success(f"¡Búsqueda completada! Se encontraron {len(neighbors_sorted)} segmentos.")
+
     num_to_show = st.slider(
         "Selecciona cuántos segmentos quieres ver:",
         min_value=1,
@@ -131,22 +143,36 @@ if 'video_results' in st.session_state and st.session_state['video_results']:
         value=min(5, len(neighbors_sorted)),
         step=1
     )
+
     for i in range(num_to_show):
+
         neighbor = neighbors_sorted[i]
         video_segment_id = neighbor.id
         distancia = neighbor.distance
         st.write(f"**ID:** `{video_segment_id}` - **Distancia:** `{distancia:.8f}`")
-        # Extrae el número de segmento del ID
         match = re.search(r'_(\d+)$', video_segment_id)
+
         if match:
             segment_index = int(match.group(1))
             video_index = segment_index // 30  # 30 segmentos por video
-            # Construye la ruta gs:// para el video correcto
-            gcs_uri = f"gs://vboxioof/Videos/Videos_Segmentados/clip_{video_index}.mp4"
+            segment_in_video = segment_index % 30
+            clip_name = f"clip_{video_index}.mp4"
+
+            # Cada segmento dura SEGMENT_INTERVAL_SEC segundos
+            start_time_global = segment_index * SEGMENT_INTERVAL_SEC
+            end_time_global = start_time_global + SEGMENT_INTERVAL_SEC
+
+            # Offset dentro del clip de 2 minutos
+            start_time_clip = segment_in_video * SEGMENT_INTERVAL_SEC
+            end_time_clip = start_time_clip + SEGMENT_INTERVAL_SEC
+            st.write(f"🔹 Este segmento está en **{clip_name}**, segundos {start_time_clip}-{end_time_clip}.")
+            gcs_uri = f"gs://vboxioof/Videos/Videos_Segmentados/{clip_name}"
+
             display_video_segment_st(
                 video_gcs_uri=gcs_uri,
                 segment_id=video_segment_id,
                 interval=SEGMENT_INTERVAL_SEC
             )
+
         else:
             st.warning(f"No se pudo extraer el índice de segmento de '{video_segment_id}'")
