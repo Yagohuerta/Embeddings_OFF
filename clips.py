@@ -110,6 +110,6 @@ def dividir_video_con_ffmpeg(ruta_video: str, carpeta_salida: str, duracion_clip
 
 if __name__ == "__main__":
 
-    ruta_video_largo = "Copia de Prueba.mp4" 
+    ruta_video_largo = "/Users/wivboost/Downloads/azteca7-2025-05-23.mkv" 
     carpeta_salida_clips = "/Users/wivboost/Downloads/Borrar"  
-    dividir_video_con_ffmpeg(ruta_video_largo, carpeta_salida_clips, 5)
+    dividir_video_con_ffmpeg(ruta_video_largo, carpeta_salida_clips)

@@ -1,91 +1,133 @@
 import streamlit as st
-import streamlit.components.v1 as components
-import pandas as pd
 import numpy as np
+import pandas as pd
+import json
+import matplotlib.pyplot as plt
+import seaborn as sns
+from PIL import Image
+import time
 
-# IMPORTANTE:
-# Aquí deberías importar las funciones reales del backend.
-# Por ejemplo:
-# from CargaEmbeddings import get_text_embedding, find_nearest_neighbors, get_image_embedding
 
-# CONSTANTES para mostrar el video
-GCS_VIDEO_URI = "gs://borrar_valerio/VIDEOYAGO.mp4"
-SEGMENT_INTERVAL_SEC = 4
+# --- Para manejar las variables de entorno ---
+import os
+from dotenv import load_dotenv
 
-def show_video_segment(video_gcs_uri: str, segment_id: str, interval: int):
+
+# --- Desactiva las advertencias de asignaciones encadenadas en pandas para evitar mensajes de warning al modificar DataFrames.
+pd.options.mode.chained_assignment = None  # default='warn'
+
+
+# --- Dependencias de Vertex AI ---
+import vertexai                                              # Importa el módulo principal de Vertex AI.
+from vertexai import init                                    # Inicializa Vertex AI con las credenciales y configuraciones necesarias.
+from vertexai.vision_models import MultiModalEmbeddingModel  # Importa el modelo de embeddings multimodales de Vertex AI para procesar imágenes y videos.
+from vertexai.vision_models import Video                     # Clase para manejar archivos de video en Vertex AI.
+from vertexai.vision_models import VideoSegmentConfig        # Configuración para segmentar videos al gener
+
+
+# --- Para conectarse y consultar un endpoint de búsqueda vectorial (Vector Search) en Vertex AI.
+from google.cloud.aiplatform.matching_engine import MatchingEngineIndexEndpoint 
+
+# --- Para acceder a los buckets de Google Cloud Storage y manejar archivos.
+from google.cloud import storage
+
+
+# --- Simulación de la Función de Búsqueda ---
+# En un caso real, aquí llamarías a tu backend de VectorSearch.
+# Esta función simulada devuelve una lista de URLs de video de ejemplo.
+def perform_vector_search(query_text=None, query_image=None):
     """
-    Muestra un segmento de video usando HTML embebido en Streamlit.
+    Simula una búsqueda en VectorSearch.
+    Devuelve una lista de URLs de video.
     """
-    try:
-        # Ej: "VIDEOYAGO_segment_1" -> extrae el número de segmento
-        segment_number = int(segment_id.split('_')[-1])
-        start_time = segment_number * interval
-        end_time = start_time + interval
-        public_url = video_gcs_uri.replace("gs://", "https://storage.googleapis.com/")
-        video_html = f"""
-        <p>Mostrando segmento: <b>{segment_id}</b> (segundos {start_time}-{end_time})</p>
-        <video width="640" controls>
-            <source src="{public_url}#t={start_time},{end_time}" type="video/mp4">
-            Tu navegador no soporta la etiqueta de video.
-        </video>
-        """
-        components.html(video_html, height=400, scrolling=True)
-    except Exception as e:
-        st.error(f"Error al mostrar el video: {e}")
+    # Simula un tiempo de espera, como si estuviera procesando la búsqueda
+    with st.spinner('Buscando en la base de datos de vectores...'):
+        time.sleep(2)
 
-# ----- Funciones simuladas de backend (reemplázalas por las reales) -----
+    # Simula la obtención de una cantidad variable de resultados
+    num_results = np.random.randint(0, 50)
+    
+    # Lista de videos de ejemplo para mostrar
+    sample_videos = [
+        "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        "https://www.youtube.com/watch?v=3JZ_D3ELwOQ",
+        "https://www.youtube.com/watch?v=L_LUpnjgPso",
+        "https://www.youtube.com/watch?v=tV_gYgfwC-w",
+        "https://www.youtube.com/watch?v=fNFzfwLM72c"
+    ] * 10 # Multiplicamos para tener suficientes videos para el ejemplo
 
-def get_text_embedding(text: str) -> list:
-    st.write(f"Simulando generación de embedding para: '{text}'")
-    # Retorna un embedding dummy (en tu implementación se llamará al modelo)
-    return [0.1, 0.2, 0.3]
+    # Devuelve una sublista aleatoria de los videos
+    return sample_videos[:num_results]
 
-def find_nearest_neighbors(query_embedding: list, num_neighbors: int = 8):
-    st.write("Simulando búsqueda de vecinos...")
-    # Creamos una clase dummy para simular el objeto neighbor
-    class Neighbor:
-        def __init__(self, id, distance):
-            self.id = id
-            self.distance = distance
+# --- Interfaz de Usuario con Streamlit ---
 
-    # Dummy: siempre retorna un vecino para la demostración
-    dummy_neighbor = Neighbor("VIDEOYAGO_segment_1", 0.12345678)
-    return [[dummy_neighbor]]  # Se devuelve una lista anidada
+# Título de la aplicación
+st.title("🎬 Búsqueda de Videos con Vector Search")
 
-def get_image_embedding(image_bytes: bytes) -> list:
-    st.write("Simulando generación de embedding para la imagen...")
-    return [0.4, 0.5, 0.6]
+# Mensaje de bienvenida
+st.write("""
+Bienvenido a la búsqueda de videos impulsada por IA. 
+Puedes buscar usando lenguaje natural (texto) o subiendo una imagen de referencia.
+""")
 
-# ----- Frontend Streamlit -----
-st.title("Búsqueda de Videos por Embeddings")
+# --- Entradas del Usuario ---
 
-# Selección del tipo de búsqueda
-option = st.radio("Selecciona el tipo de búsqueda:", ("Consulta en texto", "Subir imagen"))
+# Campo para la búsqueda con texto
+text_query = st.text_input("Buscar con texto:", placeholder="Ej: 'un atardecer en la playa'")
 
-if option == "Consulta en texto":
-    query_text = st.text_input("Escribe tu consulta en lenguaje natural:")
-    if st.button("Buscar", key="text_search"):
-        if query_text:
-            query_emb = get_text_embedding(query_text)
-            search_results = find_nearest_neighbors(query_emb)
-            if not search_results or not search_results[0]:
-                st.write("No se encontraron resultados.")
-            else:
-                for neighbor in search_results[0]:
-                    st.write(f"Encontrado: [ID: {neighbor.id}] - [Distancia: {neighbor.distance:.8f}]")
-                    show_video_segment(GCS_VIDEO_URI, neighbor.id, SEGMENT_INTERVAL_SEC)
-        else:
-            st.warning("Por favor, ingresa una consulta.")
+# Campo para subir una imagen
+st.write("O") # Separador visual
+image_query = st.file_uploader("Buscar con una imagen:", type=['png', 'jpg', 'jpeg'])
 
-else:
-    uploaded_file = st.file_uploader("Sube una imagen", type=["jpg", "jpeg", "png"])
-    if uploaded_file is not None:
-        image_bytes = uploaded_file.read()
-        query_emb = get_image_embedding(image_bytes)
-        search_results = find_nearest_neighbors(query_emb)
-        if not search_results or not search_results[0]:
-            st.write("No se encontraron resultados.")
-        else:
-            for neighbor in search_results[0]:
-                st.write(f"Encontrado: [ID: {neighbor.id}] - [Distancia: {neighbor.distance:.8f}]")
-                show_video_segment(GCS_VIDEO_URI, neighbor.id, SEGMENT_INTERVAL_SEC)
+# Botón para enviar la consulta
+search_button = st.button("Buscar Videos")
+
+# --- Lógica de Búsqueda y Visualización de Resultados ---
+
+if search_button:
+    results = []
+    # Validar que al menos una de las dos opciones (texto o imagen) tenga contenido
+    if text_query or image_query:
+        # Si se sube una imagen, mostrarla
+        if image_query is not None:
+            st.image(image_query, caption="Imagen de búsqueda", width=250)
+        
+        # Llamar a la función de búsqueda (simulada)
+        # En un caso real, pasarías el texto o los bytes de la imagen a tu backend.
+        video_results = perform_vector_search(query_text=text_query, query_image=image_query)
+
+        # Guardar los resultados en el estado de la sesión para que persistan
+        st.session_state['video_results'] = video_results
+    else:
+        st.warning("Por favor, introduce un texto o sube una imagen para buscar.")
+        # Limpiar resultados anteriores si los hubiera
+        if 'video_results' in st.session_state:
+            del st.session_state['video_results']
+
+
+# --- Mostrar Resultados si existen ---
+
+# Comprobar si hay resultados en el estado de la sesión
+if 'video_results' in st.session_state:
+    video_results = st.session_state['video_results']
+    
+    st.markdown("---") # Separador horizontal
+    
+    if len(video_results) > 0:
+        st.success(f"¡Búsqueda completada! Se encontraron {len(video_results)} videos.")
+
+        # Barra deslizable para seleccionar cuántos videos mostrar
+        num_to_show = st.slider(
+            "Selecciona cuántos videos quieres ver:",
+            min_value=1,
+            max_value=len(video_results),
+            value=min(5, len(video_results)),  # Valor por defecto: 5 o el total si es menor
+            step=1
+        )
+
+        # Mostrar los videos seleccionados
+        st.subheader(f"Mostrando los primeros {num_to_show} videos:")
+        for i in range(num_to_show):
+            st.video(video_results[i])
+    else:
+        st.info("No se encontraron videos que coincidan con tu búsqueda.")
