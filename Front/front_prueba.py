@@ -20,7 +20,7 @@ from vertexai.vision_models import Image as VMImage                             
 from vertexai.vision_models import Video, VideoSegmentConfig                    # Para manejar videos y sus segmentos
 from google.cloud.aiplatform.matching_engine import MatchingEngineIndexEndpoint # Para conectarse y consultar un endpoint de Vector Search
 from google.cloud import storage                                                # Para manejar Google Cloud Storage
-
+import re
 
 
 # --- Carga variables de entorno ---
@@ -73,6 +73,7 @@ def display_video_segment_st(video_gcs_uri: str, segment_id: str, interval: int)
         st.video(f"{public_url}#t={start_time},{end_time}")
     except (ValueError, IndexError) as e:
         st.warning(f"No se pudo parsear el ID del segmento '{segment_id}'. Error: {e}")
+        
 
 
 
@@ -94,7 +95,7 @@ image_query = st.file_uploader("Buscar con una imagen:", type=['png', 'jpg', 'jp
 search_button = st.button("Buscar Videos")
 
 
-GCS_VIDEO_URI = "gs://vboxioof/Videos/Videos_Segmentados/"  # Ajusta según tu estructura real
+GCS_VIDEO_URI = "gs://vboxioof/Videos/Videos_Segmentados/"  
 SEGMENT_INTERVAL_SEC = 4
 
 if search_button:
@@ -135,8 +136,17 @@ if 'video_results' in st.session_state and st.session_state['video_results']:
         video_segment_id = neighbor.id
         distancia = neighbor.distance
         st.write(f"**ID:** `{video_segment_id}` - **Distancia:** `{distancia:.8f}`")
-        display_video_segment_st(
-            video_gcs_uri=GCS_VIDEO_URI + f"{video_segment_id}.mp4",
-            segment_id=video_segment_id,
-            interval=SEGMENT_INTERVAL_SEC
-        )
+        # Extrae el número de segmento del ID
+        match = re.search(r'_(\d+)$', video_segment_id)
+        if match:
+            segment_index = int(match.group(1))
+            video_index = segment_index // 30  # 30 segmentos por video
+            # Construye la ruta gs:// para el video correcto
+            gcs_uri = f"gs://vboxioof/Videos/Videos_Segmentados/clip_{video_index}.mp4"
+            display_video_segment_st(
+                video_gcs_uri=gcs_uri,
+                segment_id=video_segment_id,
+                interval=SEGMENT_INTERVAL_SEC
+            )
+        else:
+            st.warning(f"No se pudo extraer el índice de segmento de '{video_segment_id}'")
