@@ -1,0 +1,10 @@
+numpy
+pandas
+matplotlib
+seaborn
+google-cloud-storage
+google-cloud-aiplatform
+vertexai
+scikit-learn
+ipython
+notebook
