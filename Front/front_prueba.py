@@ -99,41 +99,44 @@ SEGMENT_INTERVAL_SEC = 4
 
 if search_button:
     if text_query or image_query:
-
         if image_query is not None:
             st.image(image_query, caption="Imagen de búsqueda", width=250)
-            # Guarda la imagen temporalmente para cargarla con VMImage
             with open("temp_img_st_query.png", "wb") as f:
                 f.write(image_query.read())
             image_embedding = get_image_embedding("temp_img_st_query.png")
-            search_results = find_nearest_neighbors(image_embedding, 50)
-
+            search_results = find_nearest_neighbors(image_embedding, 20)
         else:
             text_emb = get_text_embedding(text_query)
-            search_results = find_nearest_neighbors(text_emb, 50)
-        
+            search_results = find_nearest_neighbors(text_emb, 20)
+
         if not search_results or not search_results[0]:
             st.info("No se encontraron resultados.")
-
+            st.session_state['video_results'] = []
         else:
             neighbors_sorted = sorted(search_results[0], key=lambda x: x.distance)
-            st.success(f"¡Búsqueda completada! Se encontraron {len(neighbors_sorted)} segmentos.")
-            num_to_show = st.slider(
-                "Selecciona cuántos segmentos quieres ver:",
-                min_value=1,
-                max_value=len(neighbors_sorted),
-                value=min(5, len(neighbors_sorted)),
-                step=1
-            )
-            for i in range(num_to_show):
-                neighbor = neighbors_sorted[i]
-                video_segment_id = neighbor.id
-                distancia = neighbor.distance
-                st.write(f"**ID:** `{video_segment_id}` - **Distancia:** `{distancia:.8f}`")
-                display_video_segment_st(
-                    video_gcs_uri=GCS_VIDEO_URI + f"{video_segment_id}.mp4",
-                    segment_id=video_segment_id,
-                    interval=SEGMENT_INTERVAL_SEC
-                )
+            st.session_state['video_results'] = neighbors_sorted
     else:
         st.warning("Por favor, introduce un texto o sube una imagen para buscar.")
+        st.session_state['video_results'] = []
+
+# Mostrar resultados si existen en session_state
+if 'video_results' in st.session_state and st.session_state['video_results']:
+    neighbors_sorted = st.session_state['video_results']
+    st.success(f"¡Búsqueda completada! Se encontraron {len(neighbors_sorted)} segmentos.")
+    num_to_show = st.slider(
+        "Selecciona cuántos segmentos quieres ver:",
+        min_value=1,
+        max_value=len(neighbors_sorted),
+        value=min(5, len(neighbors_sorted)),
+        step=1
+    )
+    for i in range(num_to_show):
+        neighbor = neighbors_sorted[i]
+        video_segment_id = neighbor.id
+        distancia = neighbor.distance
+        st.write(f"**ID:** `{video_segment_id}` - **Distancia:** `{distancia:.8f}`")
+        display_video_segment_st(
+            video_gcs_uri=GCS_VIDEO_URI + f"{video_segment_id}.mp4",
+            segment_id=video_segment_id,
+            interval=SEGMENT_INTERVAL_SEC
+        )
