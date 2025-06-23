@@ -1,3 +1,7 @@
+# --- Advertencia ---
+# El comando para correrlo es: streamlit run /Users/wivboost/Desktop/Embeddings_OFF/Front/front_prueba.py
+
+
 # --- Importamos las librerías necesarias ---
 
 import streamlit as st                # Para crear la interfaz de usuario
@@ -51,7 +55,7 @@ def get_image_embedding(image_file, dimension: int = 1408):
     embedding = mm_embedding_model.get_embeddings(image=image, dimension=dimension)
     return embedding.image_embedding
 
-def find_nearest_neighbors(query_embedding: list, num_neighbors: int = 50):
+def find_nearest_neighbors(query_embedding: list, num_neighbors: int = 2017):
     index_endpoint = MatchingEngineIndexEndpoint(index_endpoint_name=INDEX_ENDPOINT_NAME)
     neighbors = index_endpoint.find_neighbors(
         deployed_index_id=DEPLOYED_INDEX_ID,
@@ -115,7 +119,7 @@ if search_button:
 
         else:
             text_emb = get_text_embedding(text_query)
-            search_results = find_nearest_neighbors(text_emb, 20)
+            search_results = find_nearest_neighbors(text_emb, 2017)
 
         if not search_results or not search_results[0]:
             st.info("No se encontraron resultados.")

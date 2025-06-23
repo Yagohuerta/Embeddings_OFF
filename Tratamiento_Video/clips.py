@@ -49,7 +49,7 @@ def get_video_duration(video_path):
         return None
 
 
-def dividir_video_con_ffmpeg(ruta_video: str, carpeta_salida: str, duracion_clip_seg: int = 120):
+def dividir_video_con_ffmpeg(ruta_video: str, carpeta_salida: str, duracion_clip_seg: int = 4):
     """
     Divide un video en clips usando llamadas directas a ffmpeg con cortes precisos.
     """
