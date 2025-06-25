@@ -30,8 +30,8 @@ import re
 # --- Carga variables de entorno ---
 load_dotenv()
 PROJECT_ID = os.getenv("PROJECT_ID")
-INDEX_ENDPOINT_NAME = os.getenv("INDEX_ENDPOINT_NAME")
-DEPLOYED_INDEX_ID = os.getenv("DEPLOYED_INDEX_ID")
+INDEX_ID = os.getenv("INDEX_ID")
+ENDPOINT_ID = os.getenv("ENDPOINT_ID")
 LOCATION = os.getenv("LOCATION")
 
 
@@ -56,9 +56,9 @@ def get_image_embedding(image_file, dimension: int = 1408):
     return embedding.image_embedding
 
 def find_nearest_neighbors(query_embedding: list, num_neighbors: int = 2017):
-    index_endpoint = MatchingEngineIndexEndpoint(index_endpoint_name=INDEX_ENDPOINT_NAME)
+    index_endpoint = MatchingEngineIndexEndpoint(INDEX_ID=INDEX_ID)
     neighbors = index_endpoint.find_neighbors(
-        deployed_index_id=DEPLOYED_INDEX_ID,
+        ENDPOINT_ID=ENDPOINT_ID,
         queries=[query_embedding],
         num_neighbors=num_neighbors
     )
