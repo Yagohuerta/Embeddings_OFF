@@ -1,0 +1,13 @@
+# Estas son para el cuaderno de CargaEmbeddings.ipynb
+PROJECT_ID="constant-setup-463820-p6"
+LOCATION='us-central1'
+# INDEX_ENDPOINT_NAME=projects/640283206292/locations/us-central1/indexEndpoints/1468492336894836736
+# DEPLOYED_INDEX_ID=partidos_1750763625618
+BUCKET_NAME=vboxiooof
+DESTINATION_BLOB_NAME=Embeddings
+
+# Estas son para el cuaderno RAGMGem.ipynb
+INDEX_ID = "projects/640283206292/locations/us-central1/indexEndpoints/1468492336894836736"
+ENDPOINT_ID = "mexicocostarica_1750850443317"
+VIDEO_FOLDER_PATH = 'Videos/Videos_Segmentados'
+
